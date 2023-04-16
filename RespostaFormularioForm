@@ -1,4 +1,7 @@
 <?php
+//ini_set('display_errors', 1);
+//error_reporting(E_ALL);
+
 
 class RespostaFormularioForm extends TPage
 {
@@ -8,6 +11,7 @@ class RespostaFormularioForm extends TPage
     private static $activeRecord = '';
     private static $primaryKey = '';
     private static $formName = 'form_RespostaFormularioForm';
+    
 
     /**
      * Form constructor
@@ -15,6 +19,7 @@ class RespostaFormularioForm extends TPage
      */
     public function __construct( $param = null)
     {
+        
         parent::__construct();
 
         if(!empty($param['target_container']))
@@ -45,8 +50,7 @@ class RespostaFormularioForm extends TPage
         $id->setValue($param['id']??'');
         $formulario_id->setValue($param['formulario_id']??'');
         $atendimento_id->setValue($param['atendimento_id']??'');
-
-
+    
         $row1 = $this->form->addFields([new TFormSeparator("Formulário", '#333', '18', '#eee')]);
         $row1->layout = [' col-sm-12'];
 
@@ -55,6 +59,7 @@ class RespostaFormularioForm extends TPage
 
         $row3 = $this->form->addFields([new TFormSeparator("Perguntas", '#333', '18', '#eee')]);
         $row3->layout = [' col-sm-12'];
+
 
         // create the form actions
         $btn_onaction = $this->form->addAction("Salvar respostas", new TAction([$this, 'onAction']), 'fas:save #ffffff');
@@ -69,18 +74,90 @@ class RespostaFormularioForm extends TPage
         $btnClose->onClick = "Template.closeRightPanel();";
         $btnClose->setLabel("Fechar");
         $btnClose->setImage('fas:times');
-        
 
         $this->form->addHeaderWidget($btnClose);
-
+        
         parent::add($this->form);
 
+        
+        $btn_exibir_detalhes = new TButton('btn_exibir_detalhes');
+        $btn_exibir_detalhes->setLabel('Exibir detalhes');
+        $btn_exibir_detalhes->setImage('fa:search');
+        $btn_exibir_detalhes->setAction(new TAction([$this, 'onExibirDetalhes']), 'Exibir detalhes');
+        
+        $action = new TAction([$this, 'onButtonClick']);
+        $this->form->addHeaderAction('Exibir detalhes', new TAction([$this, 'onExibirDetalhes']), 'fa:search');
+
+        
         $style = new TStyle('right-panel > .container-part[page-name=RespostaFormularioForm]');
         $style->width = '70% !important';   
         $style->show(true);
 
     }
 
+    //Inicio função mostra histórico pacientes
+    public function onButtonClick($param)
+    {
+        try {
+            TTransaction::open('clinica');
+
+            $data = $this->form->getData(); // obtém os dados do formulário
+            // ... faça aqui a validação e o processamento dos dados ...
+
+            TTransaction::close();
+
+            new TMessage('success', 'Dados salvos com sucesso!');
+        } catch (Exception $e) {
+            TTransaction::rollback();
+            new TMessage('error', $e->getMessage());
+        }
+    }
+
+    
+    public function onExibirDetalhes($param)
+    {
+        try {
+            TTransaction::open('clinica');
+            
+
+            // obter a resposta do formulário anterior
+            $resposta_anterior = null;
+            if (array_key_exists('resposta_formulario_id', $param) && $param['resposta_formulario_id'] !== null) {
+                $resposta_anterior = RespostaFormulario::find($param['resposta_formulario_id'] - 1);
+            }
+
+
+            if ($resposta_anterior !== null) {
+                // mostrar detalhes da resposta anterior
+                $mensagem = 'Respostas anteriores: ' . "<br/>";
+
+
+                $respostas = Resposta::where('resposta_formulario_id', '=', $resposta_anterior->id)->load();
+
+                foreach ($respostas as $resposta) {
+                    $pergunta = Questao::find($resposta->questao_id);
+                    $mensagem .= $pergunta->enunciado . ": " . $resposta->resposta . "<br/>";
+                }
+                
+
+
+                // exibir mensagem em uma caixa de diálogo
+                new TMessage('info', $mensagem);
+            } else {
+                new TMessage('info', 'Não há respostas anteriores para este formulário.');
+            }
+
+            TTransaction::close();
+        } catch(Exception $e) {
+            TTransaction::rollback();
+            new TMessage('error', $e->getMessage());
+        }
+    }
+
+//Final
+
+
+    //Função original 
     public static function onChangeFormulario($param = null) 
     {
         try 
@@ -90,12 +167,15 @@ class RespostaFormularioForm extends TPage
                 TApplication::loadPage('RespostaFormularioForm', 'onShow', ['formulario_id' => $param['formulario_id'], 'atendimento_id' => $param['atendimento_id']]);
             }
 
+            
+
         }
         catch (Exception $e) 
         {
             new TMessage('error', $e->getMessage());    
         }
     }
+
 
     public static function onAction($param = null) 
     {
@@ -162,6 +242,7 @@ class RespostaFormularioForm extends TPage
             new TMessage('error', $e->getMessage());
         }
     }
+    
 
     public function onShow($param = null)
     {               
@@ -208,6 +289,7 @@ class RespostaFormularioForm extends TPage
         }
 
     } 
+
 
     public static function validate($param)
     {
