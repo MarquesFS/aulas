@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 class RespostaFormularioForm extends TPage
 {
@@ -172,7 +175,7 @@ class RespostaFormularioForm extends TPage
         }
     }
     
-    public function getRespostas()
+    /* public function getRespostas()
     {
         TTransaction::open('clinica');
     
@@ -196,19 +199,67 @@ class RespostaFormularioForm extends TPage
                     WHERE p.id = :paciente_id
                     ORDER BY r.id DESC
                     LIMIT 10";
-    
+        
             $conn = TTransaction::get();
             $stmt = $conn->prepare($sql);
             $stmt->bindValue(':paciente_id', $paciente_id);
             $stmt->execute();
-    
+        
             $respostas = $stmt->fetchAll(PDO::FETCH_OBJ);
+            var_dump($respostas); // Debugging
+        } else {
+            echo "Paciente ID não encontrado"; // Debugging
         }
+        
     
         TTransaction::close();
     
         return $respostas;
+    } */
+    public function getRespostas()
+    {
+        TTransaction::open('clinica');
+
+        $respostas = [];
+        $paciente_id = null;
+
+        // Verifica se o atendimento ID foi fornecido
+        if (isset($this->form->atendimento_id)) {
+            // Obtém o atendimento correspondente ao ID fornecido
+            $atendimento = new Atendimento($this->form->atendimento_id);
+            if ($atendimento instanceof Atendimento && $atendimento->paciente_id) {
+                // Se o atendimento e o ID do paciente forem válidos, armazena o ID do paciente
+                $paciente_id = $atendimento->paciente_id;
+            }
+        }
+
+        if ($paciente_id !== null) {
+            $sql = "SELECT r.id, f.nome AS formulario, p.nome AS paciente, r.resposta, r.questao_id
+                    FROM resposta r
+                    INNER JOIN resposta_formulario rf ON rf.id = r.resposta_formulario_id
+                    INNER JOIN formulario f ON f.id = rf.formulario_id
+                    INNER JOIN atendimento a ON a.id = f.atendimento_id
+                    INNER JOIN paciente p ON p.id = a.paciente_id
+                    WHERE p.id = :paciente_id
+                    ORDER BY r.id DESC
+                    LIMIT 10";
+
+            $conn = TTransaction::get();
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue(':paciente_id', $paciente_id);
+            $stmt->execute();
+
+            $respostas = $stmt->fetchAll(PDO::FETCH_OBJ);
+            var_dump($respostas); // Debugging
+        } else {
+            echo "Paciente ID não encontrado";
+        }
+
+        TTransaction::close();
+
+        return $respostas;
     }
+
     
     public function onShow($param = null)
     {               
