@@ -76,12 +76,16 @@ class RespostaFormularioForm extends TPage
         
         parent::add($this->form);
 
+
+
+
         $style = new TStyle('right-panel > .container-part[page-name=RespostaFormularioForm]');
         $style->width = '80% !important';   
         $style->show(true);
 
     }
 
+    
     
     public static function onChangeFormulario($param = null) 
     {
@@ -168,7 +172,44 @@ class RespostaFormularioForm extends TPage
         }
     }
     
-
+    public function getRespostas()
+    {
+        TTransaction::open('clinica');
+    
+        $respostas = [];
+        $paciente_id = null;
+    
+        // Obtém os dados do atendimento
+        if (isset($this->form->atendimento_id)) {
+            $atendimento = new Atendimento($this->form->atendimento_id);
+            $paciente_id = $atendimento->paciente_id;
+        }
+    
+        // Obtém as respostas associadas ao paciente
+        if ($paciente_id) {
+            $sql = "SELECT r.id, f.nome AS formulario, p.nome AS paciente, r.resposta, r.questao_id
+                    FROM resposta r
+                    INNER JOIN resposta_formulario rf ON rf.id = r.resposta_formulario_id
+                    INNER JOIN formulario f ON f.id = rf.formulario_id
+                    INNER JOIN atendimento a ON a.id = f.atendimento_id
+                    INNER JOIN paciente p ON p.id = a.paciente_id
+                    WHERE p.id = :paciente_id
+                    ORDER BY r.id DESC
+                    LIMIT 10";
+    
+            $conn = TTransaction::get();
+            $stmt = $conn->prepare($sql);
+            $stmt->bindValue(':paciente_id', $paciente_id);
+            $stmt->execute();
+    
+            $respostas = $stmt->fetchAll(PDO::FETCH_OBJ);
+        }
+    
+        TTransaction::close();
+    
+        return $respostas;
+    }
+    
     public function onShow($param = null)
     {               
 
@@ -206,6 +247,43 @@ class RespostaFormularioForm extends TPage
                 }
             }
 
+            // Obtém as respostas cadastradas
+            $respostas = $this->getRespostas();
+
+            // Cria a grid para exibir as respostas
+            $this->datagrid = new TDataGrid();
+            $this->datagrid->setHeight(200);
+
+            $id = new TDataGridColumn('id', 'ID', 'center');
+            $formulario = new TDataGridColumn('formulario', 'Formulário', 'left');
+            $paciente = new TDataGridColumn('paciente', 'Paciente', 'left');
+            $questao_id = new TDataGridColumn('questao_id', 'Questão ID', 'center');
+            $resposta = new TDataGridColumn('resposta', 'Resposta', 'left');
+
+            $this->datagrid->addColumn($id);
+            $this->datagrid->addColumn($formulario);
+            $this->datagrid->addColumn($paciente);
+            $this->datagrid->addColumn($questao_id);
+            $this->datagrid->addColumn($resposta);
+
+            // Adiciona as respostas à grid
+            foreach ($respostas as $resposta) {
+                $item = new StdClass;
+                $item->id = $resposta->id;
+                $item->formulario = $resposta->formulario;
+                $item->paciente = $resposta->paciente;
+                $item->questao_id = $resposta->questao_id;
+                $item->resposta = $resposta->resposta;
+                $this->datagrid->addItem($item);
+            }
+
+            // Cria o painel com a grid
+            $panel = new TPanelGroup('Respostas do paciente');
+            $panel->add($this->datagrid);
+
+            // Adiciona o painel ao formulário
+            parent::add($panel);
+
             TTransaction::close();
         }
         catch(Exception $e)
@@ -213,7 +291,8 @@ class RespostaFormularioForm extends TPage
             TTransaction::rollback();
         }
 
-    } 
+    }
+
 
 
     public static function validate($param)
