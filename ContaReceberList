@@ -684,7 +684,7 @@ class ContaReceberList extends TPage
         if (isset($data->tipo_conta_id) AND ( (is_scalar($data->tipo_conta_id) AND $data->tipo_conta_id !== '') OR (is_array($data->tipo_conta_id) AND (!empty($data->tipo_conta_id)) )) )
         {
 
-            $filters[] = new TFilter('tipo_conta_id', 'in', "(SELECT id FROM tipo_conta_id = '{$data->tipo_conta_id}')");// create the filter 
+            $filters[] = new TFilter('tipo_pagamento', 'in', "(SELECT id FROM tipo_pagamento WHERE nome = '{$data->tipo_pagamento}')");// create the filter 
         }
         
         
