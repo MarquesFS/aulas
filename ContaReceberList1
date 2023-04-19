@@ -162,7 +162,10 @@ class ContaReceberList extends TPage
 
                 $tableDetail->title =  $lancamento->dt_pagamento ? 'Quitada' : ($lancamento->dt_vencimento <= date('Y-m-d') ? 'Atrasada' : 'Em aberto');               
                
-        
+                
+                // Adiciona o tipo de pagamento na lista
+                $tipoPagamento = TipoPagamento::find($lancamento->tipo_pagamento_id);
+                $tableDetail->add(TElement::tag('small', 'Tipo de pagamento: ' . $tipoPagamento->nome));
 
                 // Adiciona o tipo de procedimento na lista
                 $procedimento = $lancamento->conta->descricao;
@@ -793,6 +796,12 @@ class ContaReceberList extends TPage
                     $row->id = "row_{$object->id}";
 
                 }
+                if ($total_conta) {
+                    $tfoot = $this->datagrid->tfoot; //pega o rodapé da tabela
+                    $tfoot->clear(); //limpa o rodapé atual
+                    $tfoot->addItem(null)->addCell('Total')->addCell(null)->addCell(null)->addCell(number_format($total_conta, 2, ',', '.')); //adiciona uma nova linha no rodapé com o total da coluna "total_conta"
+                }
+                
             }
 
             // reset the criteria for record count
