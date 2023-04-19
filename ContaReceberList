@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 'On');
 
 class ContaReceberList extends TPage
 {
@@ -75,6 +77,8 @@ class ContaReceberList extends TPage
         $filtro_rapido->addItems(["1"=>"Vencidas","2"=>"À vencer"]);
         
       
+       
+
 
         $data_emissao_ini->setDatabaseMask('yyyy-mm-dd');
         $data_emissao_fim->setDatabaseMask('yyyy-mm-dd');
@@ -242,8 +246,6 @@ class ContaReceberList extends TPage
         $this->datagrid->addColumn($column_data_emissao_transformed);
         $this->datagrid->addColumn($column_quitada_transformed);
 
-    
-
         $action_onShow = new TDataGridAction(array('ContaFormView', 'onShow'));
         $action_onShow->setUseButton(false);
         $action_onShow->setButtonClass('btn btn-default btn-sm');
@@ -379,7 +381,6 @@ class ContaReceberList extends TPage
         }
 
         $container->add($panel);
-        
 
         parent::add($container);
 
@@ -787,22 +788,25 @@ class ContaReceberList extends TPage
             $objects = $repository->load($criteria, FALSE);
 
             $this->datagrid->clear();
+            
+            $total_geral = 0;
             if ($objects)
             {
                 // iterate the collection of active records
                 foreach ($objects as $object)
                 {
-
+                    
                     $row = $this->datagrid->addItem($object);
                     $row->id = "row_{$object->id}";
+                    $total_geral += $object->total_conta;
 
                 }
-                if ($total_conta) {
-                    $tfoot = $this->datagrid->tfoot; //pega o rodapé da tabela
-                    $tfoot->clear(); //limpa o rodapé atual
-                    $tfoot->addItem(null)->addCell('Total')->addCell(null)->addCell(null)->addCell(number_format($total_conta, 2, ',', '.')); //adiciona uma nova linha no rodapé com o total da coluna "total_conta"
-                }
-                
+
+                // add a row for the "Total Geral" and sum of "total_conta" field
+                $row = $this->datagrid->addItem(new stdClass);
+                $row->id = 'row_total_geral';
+                $row->total_conta = '<b>Total Geral:</b>';
+                $row->valor_total_conta = '<b>'. number_format($total_geral, 2, ',', '.') .'</b>';
             }
 
             // reset the criteria for record count
@@ -819,7 +823,6 @@ class ContaReceberList extends TPage
 
             return $objects;
         }
-        
         catch (Exception $e) // in case of exception
         {
             // shows the exception error message
