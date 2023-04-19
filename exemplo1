@@ -101,6 +101,7 @@ public function __construct($param = null)
         // creates a Datagrid
         $this->datagrid = new TDataGrid;
         $this->datagrid->disableHtmlConversion();
+        
 
         $this->datagrid_form = new TForm('datagrid_'.self::$formName);
         $this->datagrid_form->onsubmit = 'return false';
@@ -116,7 +117,6 @@ public function __construct($param = null)
         $this->datagrid->style = 'width: 100%';
         $this->datagrid->setHeight(250);
 
-        
 
         $column_id = new TDataGridColumn('id', "Código", 'center' , '70px');
         $column_pessoa_nome_formatado_transformed = new TDataGridColumn('{pessoa->nome_formatado}', "Pessoa", 'left');
@@ -143,7 +143,10 @@ public function __construct($param = null)
 
                 $tableDetail->title =  $lancamento->dt_pagamento ? 'Quitada' : ($lancamento->dt_vencimento <= date('Y-m-d') ? 'Atrasada' : 'Em aberto');               
                
-        
+                
+                // Adiciona o tipo de pagamento na lista
+                $tipoPagamento = TipoPagamento::find($lancamento->tipo_pagamento_id);
+                $tableDetail->add(TElement::tag('small', 'Tipo de pagamento: ' . $tipoPagamento->nome));
 
                 // Adiciona o tipo de procedimento na lista
                 $procedimento = $lancamento->conta->descricao;
@@ -360,93 +363,4 @@ public function __construct($param = null)
 
         parent::add($container);
 
-    }
-    
-    public function onReload($param = NULL)
-    {
-        try
-        {
-            // open a transaction with database 'clinica'
-            TTransaction::open(self::$database);
-
-            // creates a repository for Conta
-            $repository = new TRepository(self::$activeRecord);
-
-            $criteria = clone $this->filter_criteria;
-
-            if (empty($param['order']))
-            {
-                $param['order'] = 'id';    
-            }
-
-            if (empty($param['direction']))
-            {
-                $param['direction'] = 'desc';
-            }
-
-            $criteria->setProperties($param); // order, offset
-            $criteria->setProperty('limit', $this->limit);
-
-            if($filters = TSession::getValue(__CLASS__.'_filters'))
-            {
-                foreach ($filters as $filter) 
-                {
-                    $criteria->add($filter);       
-                }
-            }
-
-            //</blockLine><btnShowCurtainFiltersAutoCode>
-            if(!empty($this->btnShowCurtainFilters))
-            {
-                $this->btnShowCurtainFilters->style = 'position: relative';
-                $countFilters = count($filters ?? []);
-                $this->btnShowCurtainFilters->setLabel($this->btnShowCurtainFilters->getLabel(). "<span class='badge badge-success' style='position: absolute'>{$countFilters}<span>");
-            }
-            //</blockLine></btnShowCurtainFiltersAutoCode>
-
-            // load the objects according to criteria
-            $objects = $repository->load($criteria, FALSE);
-
-            $total_conta = 0; // variável para armazenar a soma dos valores
-            
-
-            $this->datagrid->clear();
-            if ($objects)
-            {
-                // iterate the collection of active records
-                foreach ($objects as $object)
-                {
-
-                    $row = $this->datagrid->addItem($object);
-                    $row->id = "row_{$object->id}";
-
-                    $total_conta += $object->total_conta; // soma os valores da coluna 'total_conta'
-                }
-            }
-
-            // seta o valor total no rodapé da grid
-            $this->datagrid->tfoot->addItem()->addCell('Total')->addCell('')->addCell('')->addCell(number_format($total_conta, 2, ',', '.'));
-
-            // reset the criteria for record count
-            $criteria->resetProperties();
-            $count= $repository->count($criteria);
-
-            $this->pageNavigation->setCount($count); // count of records
-            $this->pageNavigation->setProperties($param); // order, page
-            $this->pageNavigation->setLimit($this->limit); // limit
-
-            // close the transaction
-            TTransaction::close();
-            $this->loaded = true;
-
-            return $objects;
-        }
-
-        catch (Exception $e) // in case of exception
-        {
-            // shows the exception error message
-            new TMessage('error', $e->getMessage());
-            // undo all pending operations
-            TTransaction::rollback();
-        }
     }
