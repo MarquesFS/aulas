@@ -122,6 +122,7 @@ class ContaReceberList extends TPage
         // creates a Datagrid
         $this->datagrid = new TDataGrid;
         $this->datagrid->disableHtmlConversion();
+        
 
         $this->datagrid_form = new TForm('datagrid_'.self::$formName);
         $this->datagrid_form->onsubmit = 'return false';
@@ -849,37 +850,5 @@ class ContaReceberList extends TPage
         }
         parent::show();
     }
-
-
-    public function onLoad()
-{
-    echo "onLoad() chamado!<br>";
-
-    $objects = $this->onReload();
-    $total_geral = 0;
-    $total_sum = 0;
-
-    // iterate the collection of active records
-    foreach ($objects as $object)
-    {
-        $total_geral += $object->total_conta;
-        $total_sum += $object->valor_conta;
-    }
-
-    // add a row for the "Total Geral" and sum of "valor_conta" field
-    $row = $this->datagrid->addItem(new stdClass);
-    $row->id = 'row_total_geral';
-    $row->total_conta = '<b>Total Geral:</b>';
-    $row->valor_total_conta = '<b>'. number_format($total_sum, 2, ',', '.') .'</b>';
-
-    // show the total in the footer
-    $this->footer_total_geral->setValue('<b>Total Geral:</b>');
-    $this->footer_valor_total_conta->setValue('<b>'. number_format($total_geral, 2, ',', '.') .'</b>');
-
-    // verify if the variables were correctly calculated
-    echo "total_geral: " . $total_geral . "<br>";
-    echo "total_sum: " . $total_sum . "<br>";
-}
-
 
 }
