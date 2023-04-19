@@ -1,6 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 'On');
 
 class ContaReceberList extends TPage
 {
@@ -138,6 +136,7 @@ class ContaReceberList extends TPage
 
         $this->datagrid->style = 'width: 100%';
         $this->datagrid->setHeight(250);
+
 
         $column_id = new TDataGridColumn('id', "Código", 'center' , '70px');
         $column_pessoa_nome_formatado_transformed = new TDataGridColumn('{pessoa->nome_formatado}', "Pessoa", 'left');
@@ -742,6 +741,7 @@ class ContaReceberList extends TPage
     /**
      * Load the datagrid with data
      */
+    
     public function onReload($param = NULL)
     {
         try
@@ -788,25 +788,16 @@ class ContaReceberList extends TPage
             $objects = $repository->load($criteria, FALSE);
 
             $this->datagrid->clear();
-            
-            $total_geral = 0;
             if ($objects)
             {
                 // iterate the collection of active records
                 foreach ($objects as $object)
                 {
-                    
+
                     $row = $this->datagrid->addItem($object);
                     $row->id = "row_{$object->id}";
-                    $total_geral += $object->total_conta;
 
                 }
-
-                // add a row for the "Total Geral" and sum of "total_conta" field
-                $row = $this->datagrid->addItem(new stdClass);
-                $row->id = 'row_total_geral';
-                $row->total_conta = '<b>Total Geral:</b>';
-                $row->valor_total_conta = '<b>'. number_format($total_geral, 2, ',', '.') .'</b>';
             }
 
             // reset the criteria for record count
@@ -843,6 +834,7 @@ class ContaReceberList extends TPage
      */
     public function show()
     {
+        
         // check if the datagrid is already loaded
         if (!$this->loaded AND (!isset($_GET['method']) OR !(in_array($_GET['method'],  $this->showMethods))) )
         {
@@ -857,5 +849,37 @@ class ContaReceberList extends TPage
         }
         parent::show();
     }
+
+
+    public function onLoad()
+{
+    echo "onLoad() chamado!<br>";
+
+    $objects = $this->onReload();
+    $total_geral = 0;
+    $total_sum = 0;
+
+    // iterate the collection of active records
+    foreach ($objects as $object)
+    {
+        $total_geral += $object->total_conta;
+        $total_sum += $object->valor_conta;
+    }
+
+    // add a row for the "Total Geral" and sum of "valor_conta" field
+    $row = $this->datagrid->addItem(new stdClass);
+    $row->id = 'row_total_geral';
+    $row->total_conta = '<b>Total Geral:</b>';
+    $row->valor_total_conta = '<b>'. number_format($total_sum, 2, ',', '.') .'</b>';
+
+    // show the total in the footer
+    $this->footer_total_geral->setValue('<b>Total Geral:</b>');
+    $this->footer_valor_total_conta->setValue('<b>'. number_format($total_geral, 2, ',', '.') .'</b>');
+
+    // verify if the variables were correctly calculated
+    echo "total_geral: " . $total_geral . "<br>";
+    echo "total_sum: " . $total_sum . "<br>";
+}
+
 
 }
