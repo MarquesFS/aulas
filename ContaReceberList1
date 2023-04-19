@@ -75,8 +75,6 @@ class ContaReceberList extends TPage
         $filtro_rapido->addItems(["1"=>"Vencidas","2"=>"À vencer"]);
         
       
-       
-
 
         $data_emissao_ini->setDatabaseMask('yyyy-mm-dd');
         $data_emissao_fim->setDatabaseMask('yyyy-mm-dd');
@@ -244,6 +242,30 @@ class ContaReceberList extends TPage
         $this->datagrid->addColumn($column_data_emissao_transformed);
         $this->datagrid->addColumn($column_quitada_transformed);
 
+        
+        //Soma valor total geral
+        $total_geral = 0;
+        foreach ($this->datagrid->getItems() as $item) {
+            $total_geral += $item->total_conta;
+        }
+
+        $footer_row = new TTableRow;
+        $footer_row->addCell('');
+        $footer_row->addCell('Total Geral');
+        $footer_row->addCell(number_format($total_geral, 2, ',', '.'));
+
+        $footer = new TTable;
+        $footer->addRow($footer_row);
+        $footer->width = '100%';
+
+        if ($this->pageNavigation) {
+            $this->pageNavigation->setWidth('100%');
+            $this->pageNavigation->addElement($footer);
+        }
+        
+        //final
+
+
         $action_onShow = new TDataGridAction(array('ContaFormView', 'onShow'));
         $action_onShow->setUseButton(false);
         $action_onShow->setButtonClass('btn btn-default btn-sm');
@@ -379,6 +401,7 @@ class ContaReceberList extends TPage
         }
 
         $container->add($panel);
+        
 
         parent::add($container);
 
