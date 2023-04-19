@@ -38,7 +38,6 @@ class ContaReceberList extends TPage
         $criteria_pessoa_id = new TCriteria();
         $criteria_categoria_conta_id = new TCriteria();
         $criteria_clinica_id = new TCriteria();
-        $criteria_tipo_pagamento_id = new TCriteria();
       
 
         $filterVar = Grupo::PACIENTE;
@@ -54,9 +53,8 @@ class ContaReceberList extends TPage
         $pessoa_id = new TDBUniqueSearch('pessoa_id', 'clinica', 'Pessoa', 'id', 'nome','nome asc' , $criteria_pessoa_id );
         $descricao = new TEntry('descricao');
         $filtro_rapido = new TCombo('filtro_rapido');
-        $tipo_pagamento = new TCombo('tipo_pagamento');
 
-       
+        $tipo_conta_id = new TDBCombo('tipo_conta_id', 'clinica', 'TipoPagamento', 'id', '{nome}','nome asc'  );
 
         $categoria_conta_id = new TDBCombo('categoria_conta_id', 'clinica', 'CategoriaConta', 'id', '{nome}','nome asc' , $criteria_categoria_conta_id );
         $clinica_id = new TDBCombo('clinica_id', 'clinica', 'Clinica', 'id', '{nome}','nome asc' , $criteria_clinica_id );
@@ -66,17 +64,17 @@ class ContaReceberList extends TPage
         $dt_vencimento_ini = new TDate('dt_vencimento_ini');
         $data_vencimento_fim = new TDate('data_vencimento_fim');
 
-
         $pessoa_id->setMinLength(1);
+
         $filtro_rapido->enableSearch();
-        $tipo_pagamento->enableSearch();
+        $tipo_conta_id->enableSearch();
+        
         $quitada->setLayout('horizontal');
         $quitada->setUseButton();
         $quitada->addItems(["S"=>"Sim","N"=>"Não",""=>"Ambos"]);
         $filtro_rapido->addItems(["1"=>"Vencidas","2"=>"À vencer"]);
         
-        
-        $tipo_pagamento = new TDBCombo('tipo_pagamento', 'clinica', 'TipoPagamento', 'id', '{nome}','nome asc' , $criteria_tipo_pagamento_id );
+      
        
 
 
@@ -96,7 +94,7 @@ class ContaReceberList extends TPage
         $descricao->setSize('100%');
         $clinica_id->setSize('100%');
         $filtro_rapido->setSize('100%');
-        $tipo_pagamento->setSize('100%');
+        $tipo_conta_id->setSize('100%');
         $data_emissao_ini->setSize(120);
         $data_emissao_fim->setSize(120);
         $dt_vencimento_ini->setSize(120);
@@ -105,7 +103,7 @@ class ContaReceberList extends TPage
 
 
 
-        $row1 = $this->form->addFields([new TLabel("Paciente:", null, '14px', null, '100%'),$pessoa_id],[new TLabel("Descrição:", null, '14px', null, '100%'),$descricao],[new TLabel("Filtro Rápido:", null, '14px', null),$filtro_rapido],[new TLabel("Forma Pagamento:", null, '14px', null),$tipo_pagamento]);
+        $row1 = $this->form->addFields([new TLabel("Paciente:", null, '14px', null, '100%'),$pessoa_id],[new TLabel("Descrição:", null, '14px', null, '100%'),$descricao],[new TLabel("Filtro Rápido:", null, '14px', null),$filtro_rapido],[new TLabel("Tipo Pagamento:", null, '14px', null),$tipo_conta_id]);
         $row1->layout = [' col-sm-3',' col-sm-3',' col-sm-3', ' col-sm-3'];
 
         $row2 = $this->form->addFields([new TLabel("Categoria:", null, '14px', null, '100%'),$categoria_conta_id],[new TLabel("Clínica:", null, '14px', null),$clinica_id],[new TLabel("Quitada:", null, '14px', null, '100%'),$quitada]);
@@ -164,9 +162,7 @@ class ContaReceberList extends TPage
 
                 $tableDetail->title =  $lancamento->dt_pagamento ? 'Quitada' : ($lancamento->dt_vencimento <= date('Y-m-d') ? 'Atrasada' : 'Em aberto');               
                
-                // Adiciona o tipo de pagamento na lista
-                $tipoPagamento = TipoPagamento::find($lancamento->tipo_pagamento_id);
-                $tableDetail->add(TElement::tag('small', 'Tipo de pagamento: ' . $tipoPagamento->nome));
+        
 
                 // Adiciona o tipo de procedimento na lista
                 $procedimento = $lancamento->conta->descricao;
@@ -681,13 +677,6 @@ class ContaReceberList extends TPage
             $filters[] = new TFilter('clinica_id', 'in', "(SELECT id FROM conta WHERE clinica_id = '{$data->clinica_id}')");// create the filter 
         }
 
-        if (isset($data->tipo_conta_id) AND ( (is_scalar($data->tipo_conta_id) AND $data->tipo_conta_id !== '') OR (is_array($data->tipo_conta_id) AND (!empty($data->tipo_conta_id)) )) )
-        {
-
-            $filters[] = new TFilter('tipo_pagamento', 'in', "(SELECT id FROM tipo_pagamento WHERE nome = '{$data->tipo_pagamento}')");// create the filter 
-        }
-        
-        
 
         if (isset($data->quitada) AND ( (is_scalar($data->quitada) AND $data->quitada !== '') OR (is_array($data->quitada) AND (!empty($data->quitada)) )) )
         {
@@ -705,6 +694,12 @@ class ContaReceberList extends TPage
         {
 
             $filters[] = new TFilter('data_emissao', '<=', $data->data_emissao_fim);// create the filter 
+        }
+
+        if (isset($data->tipo_conta_id) AND ( (is_scalar($data->tipo_conta_id) AND $data->tipo_conta_id !== '') OR (is_array($data->tipo_conta_id) AND (!empty($data->tipo_conta_id)) )) )
+        {
+
+            $filters[] = new TFilter('id', 'in', "(SELECT conta_id FROM lancamento WHERE tipo_pagamento_id = '{$data->tipo_conta_id}')");// create the filter 
         }
 
         if (isset($data->dt_vencimento_ini) AND ( (is_scalar($data->dt_vencimento_ini) AND $data->dt_vencimento_ini !== '') OR (is_array($data->dt_vencimento_ini) AND (!empty($data->dt_vencimento_ini)) )) )
@@ -814,6 +809,7 @@ class ContaReceberList extends TPage
 
             return $objects;
         }
+        
         catch (Exception $e) // in case of exception
         {
             // shows the exception error message
