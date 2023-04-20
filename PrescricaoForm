@@ -169,10 +169,33 @@ class PrescricaoForm extends TPage
                     console.log('teste', event.target.value);
                 }
             });
-        ");   */  
+        ");  */  
+        TScript::create("
+            const elementPrescricao = document.querySelector('input[name=\"medicamento_prescricao_medicamento\"]');
+            let lista = document.getElementById('lista-medicamentos');
+            elementPrescricao.addEventListener('input', (event) => {
+                if (event.target.value.length > 3) {
+                    fetch('https://bula.vercel.app/api/medicamentos?query=' + event.target.value)
+                        .then(response => response.json())
+                        .then(data => {
+                            lista.innerHTML = '';
+                            data.forEach(medicamento => {
+                                const li = document.createElement('li');
+                                li.textContent = medicamento.nome;
+                                lista.appendChild(li);
+                            });
+                        })
+                        .catch(error => console.error(error));
+                } else {
+                    lista.innerHTML = '';
+                }
+            });
+        ");
+
         
 
     }
+    
 
     public  function onAddDetailMedicamentoPrescricao($param = null) 
     {
