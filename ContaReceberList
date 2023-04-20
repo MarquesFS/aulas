@@ -290,15 +290,14 @@ class ContaReceberList extends TPage
         $this->datagrid_form->add($this->datagrid);
         $panel->add($this->datagrid_form);
 
-        $panel->addFooter($this->pageNavigation);
-
 
         $this->labelTotal = new TLabel('Total Geral');
         $this->labelTotal->setProperty('style', 'background-color:#f2f2f2; color:#00a65a; font-weight: bold; padding:8px; width: 100%; margin: 0 auto; text-align: right;');
         $panel->add($this->labelTotal);
 
-        
+        $panel->addFooter($this->pageNavigation);
 
+        
 
         $headerActions = new TElement('div');
         $headerActions->class = ' datagrid-header-actions ';
@@ -377,6 +376,7 @@ class ContaReceberList extends TPage
         $head_left_actions->add($mostrar_vencidas);
         $head_left_actions->add($vencer);
         $head_left_actions->add($em_aberto);
+
 
         $head_right_actions->add($dropdown_button_exportar);
 
