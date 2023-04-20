@@ -73,9 +73,7 @@ class ContaReceberList extends TPage
         $quitada->setUseButton();
         $quitada->addItems(["S"=>"Sim","N"=>"Não",""=>"Ambos"]);
         $filtro_rapido->addItems(["1"=>"Vencidas","2"=>"À vencer"]);
-        
-      
-       
+
 
 
         $data_emissao_ini->setDatabaseMask('yyyy-mm-dd');
@@ -254,6 +252,7 @@ class ContaReceberList extends TPage
         $action_onShow->setField(self::$primaryKey);
 
         $this->datagrid->addAction($action_onShow);
+        
 
         $action_onEdit = new TDataGridAction(array('ContaForm', 'onEdit'));
         $action_onEdit->setUseButton(false);
@@ -273,9 +272,12 @@ class ContaReceberList extends TPage
 
         $this->datagrid->addAction($action_onDelete);
 
+
+
         // create the datagrid model
         $this->datagrid->createModel();
 
+       
         // creates the page navigation
         $this->pageNavigation = new TPageNavigation;
         $this->pageNavigation->enableCounters();
@@ -289,6 +291,13 @@ class ContaReceberList extends TPage
         $panel->add($this->datagrid_form);
 
         $panel->addFooter($this->pageNavigation);
+
+
+        $this->labelTotal = new TLabel('Total Geral');
+        $this->labelTotal->setProperty('style', 'text-align:right; background-color:#e8e5e5; color:#3c8dbc; padding:8px;');
+        
+        $panel->add($this->labelTotal);
+
 
         $headerActions = new TElement('div');
         $headerActions->class = ' datagrid-header-actions ';
@@ -380,9 +389,13 @@ class ContaReceberList extends TPage
             $container->add(TBreadCrumb::create(["Financeiro","Contas a receber"]));
         }
 
+    
         $container->add($panel);
 
+
         parent::add($container);
+
+         
 
     }
 
@@ -743,7 +756,7 @@ class ContaReceberList extends TPage
      * Load the datagrid with data
      */
     
-    public function onReload($param = NULL)
+    /* public function onReload($param = NULL)
     {
         try
         {
@@ -822,7 +835,126 @@ class ContaReceberList extends TPage
             // undo all pending operations
             TTransaction::rollback();
         }
+    } */
+
+    public function onReload($param = null)
+    {
+        try {
+            // open a transaction with database 'clinica'
+            TTransaction::open(self::$database);
+
+            // creates a repository for Conta
+            $repository = new TRepository(self::$activeRecord);
+
+            $criteria = clone $this->filter_criteria;
+
+            if (empty($param['order'])) {
+                $param['order'] = 'id';
+            }
+
+            if (empty($param['direction'])) {
+                $param['direction'] = 'desc';
+            }
+
+            $criteria->setProperties($param); // order, offset
+            $criteria->setProperty('limit', $this->limit);
+
+            if ($filters = TSession::getValue(__CLASS__.'_filters')) {
+                foreach ($filters as $filter) {
+                    $criteria->add($filter);
+                }
+            }
+
+            //</blockLine><btnShowCurtainFiltersAutoCode>
+            if (!empty($this->btnShowCurtainFilters)) {
+                $this->btnShowCurtainFilters->style = 'position: relative';
+                $countFilters = count($filters ?? []);
+                $this->btnShowCurtainFilters->setLabel($this->btnShowCurtainFilters->getLabel(). "<span class='badge badge-success' style='position: absolute'>{$countFilters}<span>");
+            }
+            //</blockLine></btnShowCurtainFiltersAutoCode>
+
+            // load the objects according to criteria
+            $objects = $repository->load($criteria, false);
+
+            $this->datagrid->clear();
+            if ($objects) {
+                // iterate the collection of active records
+                foreach ($objects as $object) {
+                    $row = $this->datagrid->addItem($object);
+                    $row->id = "row_{$object->id}";
+                }
+            }
+
+            // reset the criteria for record count
+            $criteria->resetProperties();
+            $count = $repository->count($criteria);
+
+            $this->pageNavigation->setCount($count); // count of records
+            $this->pageNavigation->setProperties($param); // order, page
+            $this->pageNavigation->setLimit($this->limit); // limit
+
+            // cria um novo critério de seleção
+            $criteriaConta = new TCriteria;
+            $criteriaConta->add(new TFilter('total_conta', '>', 0));
+
+            if ($filters = TSession::getValue(__CLASS__.'_filters')) {
+                foreach ($filters as $filter) {
+                    $criteriaConta->add($filter);
+                }
+            }
+            
+            $sumSaldo = Conta::getSum($criteriaConta);
+
+            // chama a função estática da classe Conta para obter a soma do total_conta
+            $sumSaldo = Conta::getSum($criteriaConta);
+            $this->labelTotal->setValue('Total: R$ ' . number_format($sumSaldo, 2, ',', '.'));
+
+            // close the transaction
+            TTransaction::close();
+            $this->loaded = true;
+
+            return $objects;
+        } catch (Exception $e) { // in case of exception
+            // shows the exception error message
+            new TMessage('error', $e->getMessage());
+            // undo all pending operations
+            TTransaction::rollback();
+        }
     }
+
+    
+    /* public function getSum(TCriteria $criteria)
+    {
+        try
+        {
+            $sql = new TSqlSelect;
+            $sql->addColumn('SUM(total_conta)', 'total_geral');
+            $sql->setFrom('Conta');
+            $sql->setWhere($criteria);
+            
+            TTransaction::open('database');
+            $conn = TTransaction::get();
+            
+            $result = $conn->query($sql->getInstruction());
+            
+            if ($result)
+            {
+                $row = $result->fetch();
+                return $row['total_geral'];
+            }
+            
+            TTransaction::close();
+        }
+        catch (Exception $e)
+        {
+            TTransaction::rollback();
+            throw new Exception($e->getMessage());
+        }
+    } */
+    
+
+    
+
 
     public function onShow($param = null)
     {
@@ -850,5 +982,6 @@ class ContaReceberList extends TPage
         }
         parent::show();
     }
+
 
 }
