@@ -294,9 +294,10 @@ class ContaReceberList extends TPage
 
 
         $this->labelTotal = new TLabel('Total Geral');
-        $this->labelTotal->setProperty('style', 'text-align:right; background-color:#e8e5e5; color:#3c8dbc; padding:8px;');
-        
+        $this->labelTotal->setProperty('style', 'background-color:#f2f2f2; color:#00a65a; font-weight: bold; padding:8px; width: 100%; margin: 0 auto; text-align: right;');
         $panel->add($this->labelTotal);
+
+        
 
 
         $headerActions = new TElement('div');
