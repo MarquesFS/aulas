@@ -161,8 +161,35 @@ class PrescricaoForm extends TPage
         $style->width = '70% !important';   
         $style->show(true);
     
+
+        TScript::create("
+            const elementPrescricao = document.querySelector('input[name=\"medicamento_prescricao_medicamento\"]');
+            const elementPosologia = document.querySelector('input[name=\"medicamento_prescricao_posologia\"]');
+            elementPrescricao.addEventListener('input', async (event) => {
+                if (event.target.value.length > 3) {
+                    const searchTerm = event.target.value;
+                    const response = await fetch(`https://bula.vercel.app/pesquisar?nome=${searchTerm}&pagina=1`, { method: 'GET' });
+                    const data = await response.json();
+                    console.log(data);
+                    if (data && data.length > 0) {
+                        const nomeProduto = data[0].nome;
+                        elementPrescricao.value = nomeProduto;
+                        const codigoProduto = data[0].id;
+                        const responseProduto = await fetch(`https://bula.vercel.app/medicamento/${codigoProduto}`);
+                        const dataProduto = await responseProduto.json();
+                        console.log(dataProduto);
+                        if (dataProduto && dataProduto.posologia) {
+                            elementPosologia.value = dataProduto.posologia;
+                        }
+                    }
+                } else {
+                    elementPosologia.value = '';
+                }
+            });
+        ");
+
 }
-    
+
 
     public  function onAddDetailMedicamentoPrescricao($param = null) 
     {
