@@ -162,7 +162,7 @@ class PrescricaoForm extends TPage
         $style->show(true);
     
 
-        TScript::create("
+        /* TScript::create("
             const elementPrescricao = document.querySelector('input[name=\"medicamento_prescricao_medicamento\"]');
             const elementPosologia = document.querySelector('input[name=\"medicamento_prescricao_posologia\"]');
             elementPrescricao.addEventListener('input', async (event) => {
@@ -186,7 +186,44 @@ class PrescricaoForm extends TPage
                     elementPosologia.value = '';
                 }
             });
-        ");
+        "); */
+        TScript::create(`
+            const elementPrescricao = document.querySelector('input[name="medicamento_prescricao_medicamento"]');
+            const elementPosologia = document.querySelector('input[name="medicamento_prescricao_posologia"]');
+            const datalist = document.createElement('datalist');
+
+            elementPrescricao.addEventListener('input', async (event) => {
+                if (event.target.value.length > 3) {
+                const searchTerm = event.target.value;
+                const response = await fetch(\`https://bula.vercel.app/pesquisar?nome=\${searchTerm}&pagina=1\`, { method: 'GET' });
+                const data = await response.json();
+                const limitedData = data.content.slice(0, 5);
+                const options = limitedData.map(option => \`<option value="\${option.nome}"></option>\`).join('');
+                
+                datalist.innerHTML = options;
+                elementPrescricao.setAttribute('list', 'options');
+                console.log(data);
+                
+                if (data && data.length > 0) {
+                    const nomeProduto = limitedData[0].nome;
+                    elementPrescricao.value = nomeProduto;
+                    const codigoProduto = data[0].id;
+                    const responseProduto = await fetch(\`https://bula.vercel.app/medicamento/\${codigoProduto}\`);
+                    const dataProduto = await responseProduto.json();
+                    console.log(dataProduto);
+                    
+                    if (dataProduto && dataProduto.posologia) {
+                    elementPosologia.value = dataProduto.posologia;
+                    }
+                }
+                } else {
+                elementPosologia.value = '';
+                }
+            });
+
+            datalist.id = 'options';
+            elementPrescricao.after(datalist);
+        `);
 
 }
 
