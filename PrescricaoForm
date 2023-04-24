@@ -171,7 +171,7 @@ class PrescricaoForm extends TPage
        
         
         TScript::create("
-            document.querySelector('input[name='medicamento_prescricao_medicamento']').addEventListener('input', function() {
+        document.querySelector('input[name=\'medicamento_prescricao_medicamento\']').addEventListener('input', function(event) {
                 const labelMedicamento = document.createElement('label');
                 const selectMedicamentos = document.createElement('select');
 
@@ -183,12 +183,12 @@ class PrescricaoForm extends TPage
 
                 const divMedicamentos = document.getElementById('medication_list');
                 const elementPrescricao = document.querySelector('input[name=\'medicamento_prescricao_medicamento\']');
-                elementPrescricao.addEventListener('keypress', function (eventObj) {
+                elementPrescricao.addEventListener('keypress', function (event) {
                     const bularioUrl = 'https://bula.vercel.app/pesquisar'
-                    if (eventObj.target.value.length > 3) {
-                        console.log('teste', eventObj.target.value);
+                    if (event.target.value.length > 3) {
+                        console.log('teste', event.target.value);
 
-                        fetch(`${bularioUrl}?nome=${eventObj.target.value}`)
+                        fetch(`${bularioUrl}?nome=${event.target.value}`)
                             .then(async response => {
                                 console.log(response)
                                 const result = await response.json();
@@ -249,26 +249,6 @@ class PrescricaoForm extends TPage
                     elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
                 })
 
-                // Cria link da bula e adiciona ao input
-                selectMedicamentos.addEventListener('change', function () {
-                    const idBulaPacienteProtegido = this.value;
-                    elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
-
-                    // Remove o link da bula, caso exista
-                    const bulaLink = document.getElementById('bula-link');
-                    if (bulaLink) {
-                        bulaLink.remove();
-                    }
-
-                    // Adiciona o link da bula ao lado do medicamento selecionado
-                    const pdfUrl = `https://bula.vercel.app/pdf?id=${idBulaPacienteProtegido}`;
-                    const bulaLinkElement = document.createElement('a');
-                    bulaLinkElement.href = pdfUrl;
-                    bulaLinkElement.target = 'blank';
-                    bulaLinkElement.textContent = 'Ver bula';
-                    bulaLinkElement.id = 'bula-link';
-                    divMedicamentos.appendChild(bulaLinkElement);
-                });
             }); 
         ");
 
