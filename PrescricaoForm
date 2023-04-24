@@ -171,103 +171,105 @@ class PrescricaoForm extends TPage
        
         
         TScript::create("
-            const labelMedicamento = document.createElement('label');
-            const selectMedicamentos = document.createElement('select');
+            document.querySelector('input[name='medicamento_prescricao_medicamento']').addEventListener('input', function() {
+                const labelMedicamento = document.createElement('label');
+                const selectMedicamentos = document.createElement('select');
 
-            labelMedicamento.innerHTML = 'Medicamentos encontrados:'
-            labelMedicamento.htmlFor = 'medicines';
-            selectMedicamentos.classList.add('form-control')
-            selectMedicamentos.name = 'medicines';
-            selectMedicamentos.id = 'medicines'
+                labelMedicamento.innerHTML = 'Medicamentos encontrados:'
+                labelMedicamento.htmlFor = 'medicines';
+                selectMedicamentos.classList.add('form-control')
+                selectMedicamentos.name = 'medicines';
+                selectMedicamentos.id = 'medicines'
 
-            const divMedicamentos = document.getElementById('medication_list');
-            const elementPrescricao = document.querySelector('input[name=\'medicamento_prescricao_medicamento\']');
-            elementPrescricao.addEventListener('keypress', function (event) {
-                const bularioUrl = 'https://bula.vercel.app/pesquisar'
-                if (e.target.value.length > 3) {
-                    console.log('teste', event.target.value);
+                const divMedicamentos = document.getElementById('medication_list');
+                const elementPrescricao = document.querySelector('input[name=\'medicamento_prescricao_medicamento\']');
+                elementPrescricao.addEventListener('keypress', function (eventObj) {
+                    const bularioUrl = 'https://bula.vercel.app/pesquisar'
+                    if (eventObj.target.value.length > 3) {
+                        console.log('teste', eventObj.target.value);
 
-                    fetch(`${bularioUrl}?nome=${event.target.value}`)
-                        .then(async response => {
-                            console.log(response)
-                            const result = await response.json();
-                            if (!response.ok) {
-                                return new Error('Requisição falhou.');
-                            }
+                        fetch(`${bularioUrl}?nome=${eventObj.target.value}`)
+                            .then(async response => {
+                                console.log(response)
+                                const result = await response.json();
+                                if (!response.ok) {
+                                    return new Error('Requisição falhou.');
+                                }
 
-                            if (response.status === 400) {
-                                return new Error('Nenhum resultado encontrado.');
-                            }
+                                if (response.status === 400) {
+                                    return new Error('Nenhum resultado encontrado.');
+                                }
 
-                            const options = []; // criar matriz vazia para armazenar as opções de apresentação
+                                const options = []; // criar matriz vazia para armazenar as opções de apresentação
 
-                            for (const item of result.content) {
-                                fetch(`https://bula.vercel.app/medicamento/${item.numProcesso}`)
-                                    .then(async response => {
-                                        console.log(response);
-                                        if (!response.ok) {
-                                            throw new Error('Requisição falhou.');
-                                        }
-                                        const result = await response.json();
-                                        const apresentacoes = result.apresentacoes.map(apresentacao => {
-                                            const apresentacaoNome = apresentacao.apresentacao.toLowerCase();
-                                            return apresentacaoNome.charAt(0).toUpperCase() + apresentacaoNome.slice(1);
+                                for (const item of result.content) {
+                                    fetch(`https://bula.vercel.app/medicamento/${item.numProcesso}`)
+                                        .then(async response => {
+                                            console.log(response);
+                                            if (!response.ok) {
+                                                throw new Error('Requisição falhou.');
+                                            }
+                                            const result = await response.json();
+                                            const apresentacoes = result.apresentacoes.map(apresentacao => {
+                                                const apresentacaoNome = apresentacao.apresentacao.toLowerCase();
+                                                return apresentacaoNome.charAt(0).toUpperCase() + apresentacaoNome.slice(1);
+                                            });
+                                            apresentacoes.forEach(apresentacao => {
+                                                const optionApresentacao = document.createElement('option');
+                                                optionApresentacao.value = apresentacao.codigo;
+                                                const nomeProduto = item.nomeProduto.split(' ').map(palavra => {
+                                                    const palavraMinuscula = palavra.toLowerCase();
+                                                    return palavraMinuscula.charAt(0).toUpperCase() + palavraMinuscula.slice(1);
+                                                }).join(' ');
+                                                optionApresentacao.text = `${nomeProduto} - ${apresentacao}`;
+                                                options.push(optionApresentacao);
+                                            });
+                                        })
+                                        .catch(error => {
+                                            console.log('ERROR:::', error);
                                         });
-                                        apresentacoes.forEach(apresentacao => {
-                                            const optionApresentacao = document.createElement('option');
-                                            optionApresentacao.value = apresentacao.codigo;
-                                            const nomeProduto = item.nomeProduto.split(' ').map(palavra => {
-                                                const palavraMinuscula = palavra.toLowerCase();
-                                                return palavraMinuscula.charAt(0).toUpperCase() + palavraMinuscula.slice(1);
-                                            }).join(' ');
-                                            optionApresentacao.text = `${nomeProduto} - ${apresentacao}`;
-                                            options.push(optionApresentacao);
-                                        });
-                                    })
-                                    .catch(error => {
-                                        console.log('ERROR:::', error);
+                                }
+
+                                Promise.all(result.content.map(async item => {
+                                    await fetch(`https://bula.vercel.app/medicamento/${item.numProcesso}`)
+                                })).then(() => {
+                                    options.forEach(option => {
+                                        selectMedicamentos.appendChild(option);
                                     });
-                            }
 
-                            Promise.all(result.content.map(async item => {
-                                await fetch(`https://bula.vercel.app/medicamento/${item.numProcesso}`)
-                            })).then(() => {
-                                options.forEach(option => {
-                                    selectMedicamentos.appendChild(option);
+                                    divMedicamentos.appendChild(labelMedicamento).appendChild(selectMedicamentos);
                                 });
+                            })
+                            .catch(error => {
+                                console.log('ERROR:::', error);
+                            })
+                    }
+                });
+                selectMedicamentos.addEventListener('change', function () {
+                    elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
+                })
 
-                                divMedicamentos.appendChild(labelMedicamento).appendChild(selectMedicamentos);
-                            });
-                        })
-                        .catch(error => {
-                            console.log('ERROR:::', error);
-                        })
-                }
-            });
-            selectMedicamentos.addEventListener('change', function () {
-                elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
-            })
+                // Cria link da bula e adiciona ao input
+                selectMedicamentos.addEventListener('change', function () {
+                    const idBulaPacienteProtegido = this.value;
+                    elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
 
-            // Cria link da bula e adiciona ao input
-            selectMedicamentos.addEventListener('change', function () {
-                const idBulaPacienteProtegido = this.value;
-                elementPrescricao.value = selectMedicamentos.options[selectMedicamentos.selectedIndex].text;
+                    // Remove o link da bula, caso exista
+                    const bulaLink = document.getElementById('bula-link');
+                    if (bulaLink) {
+                        bulaLink.remove();
+                    }
 
-                // Remove o link da bula, caso exista
-                const bulaLink = document.getElementById('bula-link');
-                if (bulaLink) {
-                    bulaLink.remove();
-                }
-
-                // Adiciona o link da bula ao lado do medicamento selecionado
-                const pdfUrl = `https://bula.vercel.app/pdf?id=${idBulaPacienteProtegido}`;
-                const bulaLinkElement = document.createElement('a');
-                bulaLinkElement.href = pdfUrl;
-                bulaLinkElement.target = 'blank';
-                bulaLinkElement.textContent = 'Ver bula';
-                bulaLinkElement.id = 'bula-link';
-                divMedicamentos.appendChild(bulaLinkElement);
-            });
+                    // Adiciona o link da bula ao lado do medicamento selecionado
+                    const pdfUrl = `https://bula.vercel.app/pdf?id=${idBulaPacienteProtegido}`;
+                    const bulaLinkElement = document.createElement('a');
+                    bulaLinkElement.href = pdfUrl;
+                    bulaLinkElement.target = 'blank';
+                    bulaLinkElement.textContent = 'Ver bula';
+                    bulaLinkElement.id = 'bula-link';
+                    divMedicamentos.appendChild(bulaLinkElement);
+                });
+            }); 
         ");
 
 }
